@@ -1,8 +1,67 @@
+buildscript {
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+        mavenLocal()
+        jcenter()
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/snapshots'
+        }
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/releases'
+        }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+        mavenLocal()
+        jcenter()
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/snapshots'
+        }
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/releases'
+        }
+    }
+}
+
 apply plugin: 'com.android.application'
+apply plugin: 'maven'
 
 android {
-    compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    compileSdkVersion 25
+    buildToolsVersion '25.0.3'
     defaultConfig {
         minSdkVersion 10
         targetSdkVersion 21
@@ -15,10 +74,14 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    lintOptions {
+        abortOnError false
+    }
 }
 
 dependencies {
     compile project(':library')
-    compile 'com.android.support:appcompat-v7:21.0.3'
-    compile 'com.android.support:support-v4:21.0.3'
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:support-v4:25.3.1'
 }

@@ -29,15 +29,17 @@ public class ArcProgress extends View {
     private float textSize;
     private int textColor;
     private int progress = 0;
-    private int max;
+    private int emptyThreshold, max;
     private int finishedStrokeColor;
     private int unfinishedStrokeColor;
     private float arcAngle;
+    private String emptyText
+            ;
     private String suffixText = "%";
+
     private float suffixTextPadding;
 
     private float arcBottomHeight;
-
     private final int default_finished_color = Color.WHITE;
     private final int default_unfinished_color = Color.rgb(72, 106, 176);
     private final int default_text_color = Color.rgb(66, 145, 241);
@@ -46,11 +48,13 @@ public class ArcProgress extends View {
     private final float default_bottom_text_size;
     private final float default_stroke_width;
     private final String default_suffix_text;
+    private final int default_empty_threshold = 1;
     private final int default_max = 100;
     private final float default_arc_angle = 360 * 0.8f;
     private float default_text_size;
-    private final int min_size;
+    private final String default_empty_text;
 
+    private final int min_size;
     private static final String INSTANCE_STATE = "saved_instance";
     private static final String INSTANCE_STROKE_WIDTH = "stroke_width";
     private static final String INSTANCE_SUFFIX_TEXT_SIZE = "suffix_text_size";
@@ -58,8 +62,10 @@ public class ArcProgress extends View {
     private static final String INSTANCE_BOTTOM_TEXT_SIZE = "bottom_text_size";
     private static final String INSTANCE_BOTTOM_TEXT = "bottom_text";
     private static final String INSTANCE_TEXT_SIZE = "text_size";
+    private static final String INSTANCE_EMPTY_TEXT = "empty_text";
     private static final String INSTANCE_TEXT_COLOR = "text_color";
     private static final String INSTANCE_PROGRESS = "progress";
+    private static final String INSTANCE_EMPTY_THRESHOLD = "empty_threshold";
     private static final String INSTANCE_MAX = "max";
     private static final String INSTANCE_FINISHED_STROKE_COLOR = "finished_stroke_color";
     private static final String INSTANCE_UNFINISHED_STROKE_COLOR = "unfinished_stroke_color";
@@ -80,6 +86,7 @@ public class ArcProgress extends View {
         default_text_size = Utils.sp2px(getResources(), 18);
         min_size = (int) Utils.dp2px(getResources(), 100);
         default_text_size = Utils.sp2px(getResources(), 40);
+        default_empty_text = "0";
         default_suffix_text_size = Utils.sp2px(getResources(), 15);
         default_suffix_padding = Utils.dp2px(getResources(), 4);
         default_suffix_text = "%";
@@ -98,7 +105,12 @@ public class ArcProgress extends View {
         unfinishedStrokeColor = attributes.getColor(R.styleable.ArcProgress_arc_unfinished_color, default_unfinished_color);
         textColor = attributes.getColor(R.styleable.ArcProgress_arc_text_color, default_text_color);
         textSize = attributes.getDimension(R.styleable.ArcProgress_arc_text_size, default_text_size);
+        emptyText = attributes.getString(R.styleable.ArcProgress_arc_empty_text);
+        if (emptyText == null) {
+            emptyText = default_empty_text;
+        }
         arcAngle = attributes.getFloat(R.styleable.ArcProgress_arc_angle, default_arc_angle);
+        setEmptyThreshold(attributes.getInt(R.styleable.ArcProgress_arc_empty_threshold, default_empty_threshold));
         setMax(attributes.getInt(R.styleable.ArcProgress_arc_max, default_max));
         setProgress(attributes.getInt(R.styleable.ArcProgress_arc_progress, 0));
         strokeWidth = attributes.getDimension(R.styleable.ArcProgress_arc_stroke_width, default_stroke_width);
@@ -168,6 +180,14 @@ public class ArcProgress extends View {
         invalidate();
     }
 
+    public int getEmptyThreshold() {
+        return emptyThreshold;
+    }
+
+    public void setEmptyThreshold(int emptyThreshold) {
+        this.emptyThreshold = emptyThreshold;
+    }
+
     public int getMax() {
         return max;
     }
@@ -186,6 +206,14 @@ public class ArcProgress extends View {
     public void setBottomTextSize(float bottomTextSize) {
         this.bottomTextSize = bottomTextSize;
         this.invalidate();
+    }
+
+    public String getEmptyText() {
+        return emptyText;
+    }
+
+    public void setEmptyText(String emptyText) {
+        this.emptyText = emptyText;
     }
 
     public float getTextSize() {
@@ -283,7 +311,10 @@ public class ArcProgress extends View {
         paint.setColor(finishedStrokeColor);
         canvas.drawArc(rectF, finishedStartAngle, finishedSweepAngle, false, paint);
 
-        String text = String.valueOf(getProgress());
+        String text = getProgress() < getEmptyThreshold() ? getEmptyText() : String.valueOf(getProgress());
+        if (text == null || text.isEmpty()) {
+            text = String.valueOf(getProgress());
+        }
         if (!TextUtils.isEmpty(text)) {
             textPaint.setColor(textColor);
             textPaint.setTextSize(textSize);
@@ -317,9 +348,11 @@ public class ArcProgress extends View {
         bundle.putFloat(INSTANCE_SUFFIX_TEXT_PADDING, getSuffixTextPadding());
         bundle.putFloat(INSTANCE_BOTTOM_TEXT_SIZE, getBottomTextSize());
         bundle.putString(INSTANCE_BOTTOM_TEXT, getBottomText());
+        bundle.putString(INSTANCE_EMPTY_TEXT, getEmptyText());
         bundle.putFloat(INSTANCE_TEXT_SIZE, getTextSize());
         bundle.putInt(INSTANCE_TEXT_COLOR, getTextColor());
         bundle.putInt(INSTANCE_PROGRESS, getProgress());
+        bundle.putInt(INSTANCE_EMPTY_THRESHOLD, getEmptyThreshold());
         bundle.putInt(INSTANCE_MAX, getMax());
         bundle.putInt(INSTANCE_FINISHED_STROKE_COLOR, getFinishedStrokeColor());
         bundle.putInt(INSTANCE_UNFINISHED_STROKE_COLOR, getUnfinishedStrokeColor());
@@ -337,8 +370,10 @@ public class ArcProgress extends View {
             suffixTextPadding = bundle.getFloat(INSTANCE_SUFFIX_TEXT_PADDING);
             bottomTextSize = bundle.getFloat(INSTANCE_BOTTOM_TEXT_SIZE);
             bottomText = bundle.getString(INSTANCE_BOTTOM_TEXT);
+            emptyText = bundle.getString(INSTANCE_EMPTY_TEXT);
             textSize = bundle.getFloat(INSTANCE_TEXT_SIZE);
             textColor = bundle.getInt(INSTANCE_TEXT_COLOR);
+            setEmptyThreshold(bundle.getInt(INSTANCE_EMPTY_THRESHOLD));
             setMax(bundle.getInt(INSTANCE_MAX));
             setProgress(bundle.getInt(INSTANCE_PROGRESS));
             finishedStrokeColor = bundle.getInt(INSTANCE_FINISHED_STROKE_COLOR);

@@ -1,21 +1,162 @@
-apply plugin: 'com.android.library'
+buildscript {
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+        mavenLocal()
+        jcenter()
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/snapshots'
+        }
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/releases'
+        }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.3.3'
 
-version = "1.2.0"
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+        mavenLocal()
+        jcenter()
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/snapshots'
+        }
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/releases'
+        }
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
 
 android {
     compileSdkVersion 21
-    buildToolsVersion "21.1.2"
+    buildToolsVersion '25.0.3'
 
     defaultConfig {
         minSdkVersion 10
         targetSdkVersion 21
         versionCode 5
         versionName version
+        archivesBaseName = artifact
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+// custom tasks for creating source/javadoc jars
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    destinationDir = file("./javadoc/")
+    failOnError false
+}
+
+afterEvaluate {
+    javadoc.classpath += files(android.libraryVariants.collect { variant ->
+        variant.javaCompile.classpath.files
+    })
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+//Creating sources with comments
+task androidSourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+task classesJar(type: Jar) {
+    classifier = 'classes'
+    from("${project.buildDir}/intermediates/classes/release")
+}
+
+//Put the androidSources and javadoc to the artifacts
+artifacts {
+    archives androidSourcesJar
+    archives javadocJar
+    //archives classesJar
+}
+
+uploadArchives {
+    configuration = configurations.archives
+    repositories.mavenDeployer {
+
+        if (version.endsWith("-SNAPSHOT")) {
+            repository(url: 'http://192.168.3.26:8081/nexus/content/repositories/snapshots') {
+                authentication(userName: nexusUser, password: nexusPassword)
+            }
+        } else {
+            repository(url: 'http://192.168.3.26:8081/nexus/content/repositories/releases') {
+                authentication(userName: nexusUser, password: nexusPassword)
+            }
+        }
+
+        pom.artifactId = artifact
+        pom.version = version
+        pom.packaging = 'aar'
+        pom.groupId = 'com.github.lzyzsd'
+
+        pom.project {
+            name artifact
+            packaging 'aar'
+            description desc
+            url 'https://github.com/lzyzsd/CircleProgress'
+        }
+    }
+}
+
+task install(type: Upload, dependsOn: assemble) {
+    configuration = configurations.archives
+    repositories.mavenInstaller {
+
+        pom.artifactId = artifact
+        pom.version = version
+        pom.packaging = 'aar'
+        pom.groupId = 'com.github.lzyzsd'
+
+        pom.project {
+            name artifact
+            packaging 'aar'
+            description desc
+            url 'https://github.com/lzyzsd/CircleProgress'
         }
     }
 }

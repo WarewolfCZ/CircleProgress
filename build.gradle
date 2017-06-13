@@ -2,15 +2,58 @@
 
 buildscript {
     repositories {
+        flatDir {
+            dirs 'libs'
+        }
+        mavenLocal()
         jcenter()
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/snapshots'
+        }
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/releases'
+        }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.0-rc2'
+        classpath 'com.android.tools.build:gradle:2.3.3'
+
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
     }
 }
 
 allprojects {
     repositories {
+        flatDir {
+            dirs 'libs'
+        }
+        mavenLocal()
         jcenter()
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/snapshots'
+        }
+        maven {
+            credentials {
+                // specified in ~/.gradle/gradle.properties
+                username nexusUser
+                password nexusPassword
+            }
+            url 'http://192.168.3.26:8081/nexus/content/repositories/releases'
+        }
     }
 }

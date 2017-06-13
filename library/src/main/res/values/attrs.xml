@@ -53,6 +53,8 @@
 
         <attr name="arc_text_size" format="dimension"/>
         <attr name="arc_text_color" format="color"/>
+        <attr name="arc_empty_threshold" format="integer"/>
+        <attr name="arc_empty_text" format="string"/>
 
         <attr name="arc_suffix_text" format="string"/>
         <attr name="arc_suffix_text_size" format="dimension"/>
