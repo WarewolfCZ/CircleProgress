@@ -58,6 +58,7 @@
         <attr name="arc_override_text" format="string"/>
 
         <attr name="arc_suffix_text" format="string"/>
+        <attr name="arc_suffix_text_hide_when_empty" format="boolean"/>
         <attr name="arc_suffix_text_size" format="dimension"/>
         <attr name="arc_suffix_text_padding" format="dimension"/>
 

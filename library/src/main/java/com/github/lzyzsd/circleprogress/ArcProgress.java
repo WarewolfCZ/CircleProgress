@@ -19,11 +19,12 @@ import android.view.View;
 public class ArcProgress extends View {
     private Paint paint;
     protected Paint textPaint;
-
     private RectF rectF = new RectF();
 
     private float strokeWidth;
+
     private float suffixTextSize;
+    private boolean suffixTextHideWhenEmpty;
     private float bottomTextSize;
     private String bottomText;
     private float textSize;
@@ -48,17 +49,19 @@ public class ArcProgress extends View {
     private final float default_bottom_text_size;
     private final float default_stroke_width;
     private final String default_suffix_text;
+    private boolean default_suffix_hide_when_empty = false;
     private final int default_empty_threshold = 1;
     private final int default_max = 100;
     private final float default_arc_angle = 360 * 0.8f;
-    private float default_text_size;
 
+    private float default_text_size;
     private final String default_empty_text;
     private final int min_size;
     private static final String INSTANCE_STATE = "saved_instance";
     private static final String INSTANCE_STROKE_WIDTH = "stroke_width";
     private static final String INSTANCE_SUFFIX_TEXT_SIZE = "suffix_text_size";
     private static final String INSTANCE_SUFFIX_TEXT_PADDING = "suffix_text_padding";
+    private static final String INSTANCE_SUFFIX_TEXT_HIDE_WHEN_EMPTY = "suffix_hide_when_empty";
     private static final String INSTANCE_BOTTOM_TEXT_SIZE = "bottom_text_size";
     private static final String INSTANCE_BOTTOM_TEXT = "bottom_text";
     private static final String INSTANCE_TEXT_SIZE = "text_size";
@@ -119,6 +122,7 @@ public class ArcProgress extends View {
         suffixTextSize = attributes.getDimension(R.styleable.ArcProgress_arc_suffix_text_size, default_suffix_text_size);
         suffixText = TextUtils.isEmpty(attributes.getString(R.styleable.ArcProgress_arc_suffix_text)) ? default_suffix_text : attributes.getString(R.styleable.ArcProgress_arc_suffix_text);
         suffixTextPadding = attributes.getDimension(R.styleable.ArcProgress_arc_suffix_text_padding, default_suffix_padding);
+        suffixTextHideWhenEmpty = attributes.getBoolean(R.styleable.ArcProgress_arc_suffix_text_hide_when_empty, default_suffix_hide_when_empty);
         bottomTextSize = attributes.getDimension(R.styleable.ArcProgress_arc_bottom_text_size, default_bottom_text_size);
         bottomText = attributes.getString(R.styleable.ArcProgress_arc_bottom_text);
     }
@@ -289,6 +293,14 @@ public class ArcProgress extends View {
         this.invalidate();
     }
 
+    public boolean isSuffixTextHideWhenEmpty() {
+        return suffixTextHideWhenEmpty;
+    }
+
+    public void setSuffixTextHideWhenEmpty(boolean suffixTextHideWhenEmpty) {
+        this.suffixTextHideWhenEmpty = suffixTextHideWhenEmpty;
+    }
+
     @Override
     protected int getSuggestedMinimumHeight() {
         return min_size;
@@ -338,7 +350,10 @@ public class ArcProgress extends View {
             float textHeight = textPaint.descent() + textPaint.ascent();
             float textBaseline = (getHeight() - textHeight) / 2.0f;
             canvas.drawText(text, (getWidth() - textPaint.measureText(text)) / 2.0f, textBaseline, textPaint);
-            if (overrideText == null) {
+            if (progress < getEmptyThreshold() && isSuffixTextHideWhenEmpty()) {
+                suffixTextSize = 0;
+            }
+            if (suffixTextSize > 0) {
                 textPaint.setTextSize(suffixTextSize);
                 float suffixHeight = textPaint.descent() + textPaint.ascent();
                 canvas.drawText(suffixText, getWidth() / 2.0f + textPaint.measureText(text) + suffixTextPadding, textBaseline + textHeight - suffixHeight, textPaint);
@@ -365,6 +380,7 @@ public class ArcProgress extends View {
         bundle.putFloat(INSTANCE_STROKE_WIDTH, getStrokeWidth());
         bundle.putFloat(INSTANCE_SUFFIX_TEXT_SIZE, getSuffixTextSize());
         bundle.putFloat(INSTANCE_SUFFIX_TEXT_PADDING, getSuffixTextPadding());
+        bundle.putBoolean(INSTANCE_SUFFIX_TEXT_HIDE_WHEN_EMPTY, isSuffixTextHideWhenEmpty());
         bundle.putFloat(INSTANCE_BOTTOM_TEXT_SIZE, getBottomTextSize());
         bundle.putString(INSTANCE_BOTTOM_TEXT, getBottomText());
         bundle.putString(INSTANCE_OVERRIDE_TEXT, getOverrideText());
@@ -388,6 +404,7 @@ public class ArcProgress extends View {
             strokeWidth = bundle.getFloat(INSTANCE_STROKE_WIDTH);
             suffixTextSize = bundle.getFloat(INSTANCE_SUFFIX_TEXT_SIZE);
             suffixTextPadding = bundle.getFloat(INSTANCE_SUFFIX_TEXT_PADDING);
+            suffixTextHideWhenEmpty = bundle.getBoolean(INSTANCE_SUFFIX_TEXT_HIDE_WHEN_EMPTY);
             bottomTextSize = bundle.getFloat(INSTANCE_BOTTOM_TEXT_SIZE);
             bottomText = bundle.getString(INSTANCE_BOTTOM_TEXT);
             overrideText = bundle.getString(INSTANCE_OVERRIDE_TEXT);
