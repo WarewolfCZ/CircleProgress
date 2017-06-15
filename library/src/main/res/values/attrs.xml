@@ -46,6 +46,7 @@
         <attr name="arc_progress" format="integer"/>
         <attr name="arc_angle" format="float"/>
         <attr name="arc_stroke_width" format="dimension"/>
+        <attr name="arc_min" format="integer"/>
         <attr name="arc_max" format="integer"/>
 
         <attr name="arc_unfinished_color" format="color"/>
@@ -58,7 +59,7 @@
         <attr name="arc_override_text" format="string"/>
 
         <attr name="arc_suffix_text" format="string"/>
-        <attr name="arc_suffix_text_hide_when_empty" format="boolean"/>
+        <attr name="arc_suffix_hide_when_empty" format="boolean"/>
         <attr name="arc_suffix_text_size" format="dimension"/>
         <attr name="arc_suffix_text_padding" format="dimension"/>
 

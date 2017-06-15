@@ -24,21 +24,21 @@ public class ArcProgress extends View {
     private float strokeWidth;
 
     private float suffixTextSize;
-    private boolean suffixTextHideWhenEmpty;
+    private boolean suffixHideWhenEmpty;
     private float bottomTextSize;
     private String bottomText;
     private float textSize;
     private int textColor;
     private long progress = 0;
-    private long emptyThreshold, max;
+    private long emptyThreshold, max, min;
     private int finishedStrokeColor;
     private int unfinishedStrokeColor;
     private float arcAngle;
     private String emptyText;
+
     private String overrideText;
 
     private String suffixText = "%";
-
     private float suffixTextPadding;
     private float arcBottomHeight;
     private final int default_finished_color = Color.WHITE;
@@ -51,6 +51,7 @@ public class ArcProgress extends View {
     private final String default_suffix_text;
     private boolean default_suffix_hide_when_empty = false;
     private final int default_empty_threshold = 1;
+    private final int default_min = 0;
     private final int default_max = 100;
     private final float default_arc_angle = 360 * 0.8f;
 
@@ -70,6 +71,7 @@ public class ArcProgress extends View {
     private static final String INSTANCE_TEXT_COLOR = "text_color";
     private static final String INSTANCE_PROGRESS = "progress";
     private static final String INSTANCE_EMPTY_THRESHOLD = "empty_threshold";
+    private static final String INSTANCE_MIN = "min";
     private static final String INSTANCE_MAX = "max";
     private static final String INSTANCE_FINISHED_STROKE_COLOR = "finished_stroke_color";
     private static final String INSTANCE_UNFINISHED_STROKE_COLOR = "unfinished_stroke_color";
@@ -116,13 +118,14 @@ public class ArcProgress extends View {
         overrideText = attributes.getString(R.styleable.ArcProgress_arc_override_text);
         arcAngle = attributes.getFloat(R.styleable.ArcProgress_arc_angle, default_arc_angle);
         setEmptyThreshold(attributes.getInt(R.styleable.ArcProgress_arc_empty_threshold, default_empty_threshold));
+        setMin(attributes.getInt(R.styleable.ArcProgress_arc_min, default_min));
         setMax(attributes.getInt(R.styleable.ArcProgress_arc_max, default_max));
         setProgress(attributes.getInt(R.styleable.ArcProgress_arc_progress, 0));
         strokeWidth = attributes.getDimension(R.styleable.ArcProgress_arc_stroke_width, default_stroke_width);
         suffixTextSize = attributes.getDimension(R.styleable.ArcProgress_arc_suffix_text_size, default_suffix_text_size);
         suffixText = TextUtils.isEmpty(attributes.getString(R.styleable.ArcProgress_arc_suffix_text)) ? default_suffix_text : attributes.getString(R.styleable.ArcProgress_arc_suffix_text);
         suffixTextPadding = attributes.getDimension(R.styleable.ArcProgress_arc_suffix_text_padding, default_suffix_padding);
-        suffixTextHideWhenEmpty = attributes.getBoolean(R.styleable.ArcProgress_arc_suffix_text_hide_when_empty, default_suffix_hide_when_empty);
+        suffixHideWhenEmpty = attributes.getBoolean(R.styleable.ArcProgress_arc_suffix_hide_when_empty, default_suffix_hide_when_empty);
         bottomTextSize = attributes.getDimension(R.styleable.ArcProgress_arc_bottom_text_size, default_bottom_text_size);
         bottomText = attributes.getString(R.styleable.ArcProgress_arc_bottom_text);
     }
@@ -182,6 +185,8 @@ public class ArcProgress extends View {
         this.progress = progress;
         if (this.progress > getMax()) {
             this.progress %= getMax();
+        } else if (progress < getMin()) {
+            this.progress = getMin();
         }
         invalidate();
     }
@@ -203,6 +208,17 @@ public class ArcProgress extends View {
             this.max = max;
             invalidate();
         }
+    }
+
+    public void setMin(long min) {
+        if (min < max) {
+            this.min = min;
+            invalidate();
+        }
+    }
+
+    public long getMin() {
+        return min;
     }
 
     public float getBottomTextSize() {
@@ -293,12 +309,12 @@ public class ArcProgress extends View {
         this.invalidate();
     }
 
-    public boolean isSuffixTextHideWhenEmpty() {
-        return suffixTextHideWhenEmpty;
+    public boolean isSuffixHideWhenEmpty() {
+        return suffixHideWhenEmpty;
     }
 
-    public void setSuffixTextHideWhenEmpty(boolean suffixTextHideWhenEmpty) {
-        this.suffixTextHideWhenEmpty = suffixTextHideWhenEmpty;
+    public void setSuffixHideWhenEmpty(boolean suffixHideWhenEmpty) {
+        this.suffixHideWhenEmpty = suffixHideWhenEmpty;
     }
 
     @Override
@@ -325,7 +341,7 @@ public class ArcProgress extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         float startAngle = 270 - arcAngle / 2f;
-        float finishedSweepAngle = progress / (float) getMax() * arcAngle;
+        float finishedSweepAngle = (progress - getMin()) / (float) (getMax() - getMin()) * arcAngle;
         float finishedStartAngle = startAngle;
         if(progress == 0) finishedStartAngle = 0.01f;
         paint.setColor(unfinishedStrokeColor);
@@ -350,13 +366,11 @@ public class ArcProgress extends View {
             float textHeight = textPaint.descent() + textPaint.ascent();
             float textBaseline = (getHeight() - textHeight) / 2.0f;
             canvas.drawText(text, (getWidth() - textPaint.measureText(text)) / 2.0f, textBaseline, textPaint);
-            if (progress < getEmptyThreshold() && isSuffixTextHideWhenEmpty()) {
-                suffixTextSize = 0;
-            }
-            if (suffixTextSize > 0) {
+            if (progress >= getEmptyThreshold() || (progress < getEmptyThreshold() && !isSuffixHideWhenEmpty())) {
                 textPaint.setTextSize(suffixTextSize);
                 float suffixHeight = textPaint.descent() + textPaint.ascent();
-                canvas.drawText(suffixText, getWidth() / 2.0f + textPaint.measureText(text) + suffixTextPadding, textBaseline + textHeight - suffixHeight, textPaint);
+                canvas.drawText(suffixText, getWidth() / 2.0f + (textPaint.measureText(text) + suffixTextPadding),
+                        textBaseline + textHeight - suffixHeight, textPaint);
             }
         }
 
@@ -380,7 +394,7 @@ public class ArcProgress extends View {
         bundle.putFloat(INSTANCE_STROKE_WIDTH, getStrokeWidth());
         bundle.putFloat(INSTANCE_SUFFIX_TEXT_SIZE, getSuffixTextSize());
         bundle.putFloat(INSTANCE_SUFFIX_TEXT_PADDING, getSuffixTextPadding());
-        bundle.putBoolean(INSTANCE_SUFFIX_TEXT_HIDE_WHEN_EMPTY, isSuffixTextHideWhenEmpty());
+        bundle.putBoolean(INSTANCE_SUFFIX_TEXT_HIDE_WHEN_EMPTY, isSuffixHideWhenEmpty());
         bundle.putFloat(INSTANCE_BOTTOM_TEXT_SIZE, getBottomTextSize());
         bundle.putString(INSTANCE_BOTTOM_TEXT, getBottomText());
         bundle.putString(INSTANCE_OVERRIDE_TEXT, getOverrideText());
@@ -389,6 +403,7 @@ public class ArcProgress extends View {
         bundle.putInt(INSTANCE_TEXT_COLOR, getTextColor());
         bundle.putLong(INSTANCE_PROGRESS, getProgress());
         bundle.putLong(INSTANCE_EMPTY_THRESHOLD, getEmptyThreshold());
+        bundle.putLong(INSTANCE_MIN, getMin());
         bundle.putLong(INSTANCE_MAX, getMax());
         bundle.putInt(INSTANCE_FINISHED_STROKE_COLOR, getFinishedStrokeColor());
         bundle.putInt(INSTANCE_UNFINISHED_STROKE_COLOR, getUnfinishedStrokeColor());
@@ -404,7 +419,7 @@ public class ArcProgress extends View {
             strokeWidth = bundle.getFloat(INSTANCE_STROKE_WIDTH);
             suffixTextSize = bundle.getFloat(INSTANCE_SUFFIX_TEXT_SIZE);
             suffixTextPadding = bundle.getFloat(INSTANCE_SUFFIX_TEXT_PADDING);
-            suffixTextHideWhenEmpty = bundle.getBoolean(INSTANCE_SUFFIX_TEXT_HIDE_WHEN_EMPTY);
+            suffixHideWhenEmpty = bundle.getBoolean(INSTANCE_SUFFIX_TEXT_HIDE_WHEN_EMPTY);
             bottomTextSize = bundle.getFloat(INSTANCE_BOTTOM_TEXT_SIZE);
             bottomText = bundle.getString(INSTANCE_BOTTOM_TEXT);
             overrideText = bundle.getString(INSTANCE_OVERRIDE_TEXT);
@@ -413,6 +428,7 @@ public class ArcProgress extends View {
             textColor = bundle.getInt(INSTANCE_TEXT_COLOR);
             setEmptyThreshold(bundle.getLong(INSTANCE_EMPTY_THRESHOLD));
             setMax(bundle.getLong(INSTANCE_MAX));
+            setMin(bundle.getLong(INSTANCE_MIN));
             setProgress(bundle.getLong(INSTANCE_PROGRESS));
             finishedStrokeColor = bundle.getInt(INSTANCE_FINISHED_STROKE_COLOR);
             unfinishedStrokeColor = bundle.getInt(INSTANCE_UNFINISHED_STROKE_COLOR);
