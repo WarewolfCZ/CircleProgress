@@ -1,3 +1,5 @@
+import java.util.regex.Pattern
+
 buildscript {
     repositories {
         flatDir {
@@ -115,7 +117,7 @@ artifacts {
     //archives classesJar
 }
 
-uploadArchives {
+task uploadArchives(type: Upload) {
     configuration = configurations.archives
     repositories.mavenDeployer {
 
@@ -158,5 +160,107 @@ task install(type: Upload, dependsOn: assemble) {
             description desc
             url 'https://github.com/lzyzsd/CircleProgress'
         }
+    }
+}
+
+task incrementVersion {
+    doLast {
+        def props = new Properties()
+        file("gradle.properties").withInputStream { props.load(it) }
+        version = props.getProperty("version")
+
+        //noinspection GrUnresolvedAccess,GroovyAssignabilityCheck
+        println(":incrementVersion old version number: " + version)
+
+        def patternVersionNumber = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(.*)")
+        def matcherVersionNumber = patternVersionNumber.matcher(version)
+        matcherVersionNumber.find()
+        def majorVersion = Integer.parseInt(matcherVersionNumber.group(1))
+        def minorVersion = Integer.parseInt(matcherVersionNumber.group(2))
+        def buildVersion = Integer.parseInt(matcherVersionNumber.group(3))
+        def suffix = matcherVersionNumber.group(4)
+
+        def result = majorVersion + "." + minorVersion + "." + ++buildVersion + suffix
+
+        println(":incrementVersion new version number: " + result)
+
+        // update version number in gradle.properties file
+        def propsFile = file("gradle.properties")
+        def propsText = propsFile.getText()
+        propsText = propsText.replaceAll('version.*', 'version = ' + result)
+
+        propsFile.write(propsText)
+
+        return result
+    }
+}
+
+task releaseVersion {
+    doLast {
+        def props = new Properties()
+        file("gradle.properties").withInputStream { props.load(it) }
+        version = props.getProperty("version")
+
+        //noinspection GrUnresolvedAccess,GroovyAssignabilityCheck
+        println(":releaseVersion old version number: " + version)
+
+        def patternVersionNumber = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(.*)")
+        def matcherVersionNumber = patternVersionNumber.matcher(version)
+        matcherVersionNumber.find()
+        def majorVersion = Integer.parseInt(matcherVersionNumber.group(1))
+        def minorVersion = Integer.parseInt(matcherVersionNumber.group(2))
+        def buildVersion = Integer.parseInt(matcherVersionNumber.group(3))
+
+        def result = majorVersion + "." + minorVersion + "." + buildVersion
+
+        println(":releaseVersion new version number: " + result)
+
+        // update version number in gradle.properties file
+        def propsFile = file("gradle.properties")
+        def propsText = propsFile.getText()
+        propsText = propsText.replaceAll('version.*', 'version = ' + result)
+
+        propsFile.write(propsText)
+
+        return result
+    }
+}
+
+task snapshotVersion(dependsOn: incrementVersion) {
+    doLast {
+        def props = new Properties()
+        file("gradle.properties").withInputStream { props.load(it) }
+        version = props.getProperty("version")
+
+        //noinspection GrUnresolvedAccess,GroovyAssignabilityCheck
+        println(":snapshotVersion old version number: " + version)
+
+        def patternVersionNumber = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(.*)")
+        def matcherVersionNumber = patternVersionNumber.matcher(version)
+        matcherVersionNumber.find()
+        def majorVersion = Integer.parseInt(matcherVersionNumber.group(1))
+        def minorVersion = Integer.parseInt(matcherVersionNumber.group(2))
+        def buildVersion = Integer.parseInt(matcherVersionNumber.group(3))
+
+        def result = majorVersion + "." + minorVersion + "." + buildVersion + "-SNAPSHOT"
+
+        println(":snapshotVersion new version number: " + result)
+
+        // update version number in gradle.properties file
+        def propsFile = file("gradle.properties")
+        def propsText = propsFile.getText()
+        propsText = propsText.replaceAll('version.*', 'version = ' + result)
+
+        propsFile.write(propsText)
+
+        return result
+    }
+}
+
+task createReleaseTag {
+    doLast {
+        def tagName = "v${project.version}"
+        println(":createReleaseTag creating tag: " + tagName)
+        ("git tag $tagName").execute()
     }
 }
